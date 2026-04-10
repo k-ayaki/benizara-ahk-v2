@@ -249,7 +249,11 @@ IME_GetConverting(WinTitle := "A", ConvCls := "", CandCls := "") {
     if !hwnd
         return 0
 
-    pid := WinGetPID("ahk_id " hwnd)
+	try
+	    pid := WinGetPID("ahk_id " hwnd)
+	catch TargetError
+	    return 0
+	
     ret := 0
 
     ; 環境の退避

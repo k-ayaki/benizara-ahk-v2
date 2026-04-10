@@ -16,19 +16,19 @@ SendOnHoldMO()
 	if(g_OnHoldIdx < 1) {
 		clearQueue()
 	} else if(_cntM >= 1) {
-		meta1 := g_MetaOnHold.Has(1) ? g_MetaOnHold[1] : ""
-		meta2 := g_MetaOnHold.Has(2) ? g_MetaOnHold[2] : ""
+		meta1 := SafeMetaOnHold(1)
+		meta2 := SafeMetaOnHold(2)
 
 		if(meta1 == "M" && RegExMatch(meta2, "^[RLABCD]$"))
 		{
-			_mode := g_RomajiOnHold[2] . g_OyaOnHold[2] . g_KoyubiOnHold[2]
-			SendOnHold(_mode, g_MojiOnHold[1], g_ZeroDelay)
+			_mode := SafeRomajiOnHold(2) . SafeOyaOnHold(2) . SafeKoyubiOnHold(2)
+			SendOnHold(_mode, SafeMojiOnHold(1), g_ZeroDelay)
 			dequeueKey()
 			dequeueKey()
 			clearQueue()
 		} else if(meta1 == "M") {
-			_mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
-			SendOnHold(_mode, g_MojiOnHold[1], g_ZeroDelay)
+			_mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+			SendOnHold(_mode, SafeMojiOnHold(1), g_ZeroDelay)
 			dequeueKey()
 			clearQueue()
 		}
@@ -54,19 +54,19 @@ SendOnHoldOM()
 	if(g_OnHoldIdx < 1) {
 		clearQueue()
 	} else if(_cntM >= 1) {
-		meta1 := g_MetaOnHold.Has(1) ? g_MetaOnHold[1] : ""
-		meta2 := g_MetaOnHold.Has(2) ? g_MetaOnHold[2] : ""
+		meta1 := SafeMetaOnHold(1)
+		meta2 := SafeMetaOnHold(2)
 
 		if(RegExMatch(meta1, "^[RLABCD]$") && meta2 == "M")
 		{
-			_mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
-			SendOnHold(_mode, g_MojiOnHold[2], g_ZeroDelay)
+			_mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+			SendOnHold(_mode, SafeMojiOnHold(2), g_ZeroDelay)
 			dequeueKey()
 			dequeueKey()
 			clearQueue()
 		} else if(meta1 == "M") {
-			_mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
-			SendOnHold(_mode, g_MojiOnHold[1], g_ZeroDelay)
+			_mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+			SendOnHold(_mode, SafeMojiOnHold(1), g_ZeroDelay)
 			dequeueKey()
 			clearQueue()
 		}
@@ -90,18 +90,20 @@ SendOnHoldM()
 	
 	_cntM := countMoji()
 	if(_cntM >= 1) {
-		meta1 := g_MetaOnHold.Has(1) ? g_MetaOnHold[1] : ""
-		meta2 := g_MetaOnHold.Has(2) ? g_MetaOnHold[2] : ""
-
+		meta1 := SafeMetaOnHold(1)
+		meta2 := SafeMetaOnHold(2)
+		_mode := ""
 		if(g_OnHoldIdx >= 2 && RegExMatch(meta1, "^[RLABCD]$") && meta2 == "M")
 		{
-			_mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
+			_mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+			dequeueKey()
+			SendOnHold(_mode, SafeMojiOnHold(1), g_ZeroDelay)
 			dequeueKey()
 		} else if(meta1 == "M") {
-			_mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
+			_mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+			SendOnHold(_mode, SafeMojiOnHold(1), g_ZeroDelay)
+			dequeueKey()
 		}
-		SendOnHold(_mode, g_MojiOnHold[1], g_ZeroDelay)
-		dequeueKey()
 	}
 	_KeyInPtn := getKeyinPtnFromQueue()
 	return _KeyInPtn
@@ -131,22 +133,22 @@ SendOnHoldMM()
 	}
 	
 	if(_cntM >= 2) {
-		meta1 := g_MetaOnHold.Has(1) ? g_MetaOnHold[1] : ""
-		meta2 := g_MetaOnHold.Has(2) ? g_MetaOnHold[2] : ""
-		meta3 := g_MetaOnHold.Has(3) ? g_MetaOnHold[3] : ""
+		meta1 := SafeMetaOnHold(1)
+		meta2 := SafeMetaOnHold(2)
+		meta3 := SafeMetaOnHold(3)
 
 		if(g_OnHoldIdx >= 3 && RegExMatch(meta1, "^[RLABCD]$") && meta2 == "M" && meta3 == "M")
 		{
-			g_RomajiOnHold[2] := g_RomajiOnHold[1]
-			g_OyaOnHold[2]    := g_OyaOnHold[1]
-			g_KoyubiOnHold[2] := g_KoyubiOnHold[1]
+			g_RomajiOnHold[2] := SafeRomajiOnHold(1)
+			g_OyaOnHold[2]    := SafeOyaOnHold(1)
+			g_KoyubiOnHold[2] := SafeKoyubiOnHold(1)
 			dequeueKey()
 		}
-		_mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
+		_mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
 		
-		chkKey := _mode . g_MojiOnHold[2] . g_MojiOnHold[1]
+		chkKey := _mode . SafeMojiOnHold(2) . SafeMojiOnHold(1)
 		if(kdn.Has(chkKey) && kdn[chkKey] != "") {
-			SendOnHold(_mode, g_MojiOnHold[2] . g_MojiOnHold[1], g_ZeroDelay)
+			SendOnHold(_mode, SafeMojiOnHold(2) . SafeMojiOnHold(1), g_ZeroDelay)
 			dequeueKey()
 			dequeueKey()
 			_keyInPtn := clearQueue()
@@ -183,52 +185,52 @@ SendOnHoldMMM()
 	else if(_cntM == 2) {
 		_KeyInPtn := SendOnHoldMM()
 		if(_KeyInPtn == "M") {
-			SubSendUp(g_MojiOnHold[1])
+			SubSendUp(SafeMojiOnHold(1))
 			_KeyInPtn := SendOnHoldM()
 		}
 		return _KeyInPtn
 	}
 	
-	meta1 := g_MetaOnHold.Has(1) ? g_MetaOnHold[1] : ""
-	meta2 := g_MetaOnHold.Has(2) ? g_MetaOnHold[2] : ""
-	meta3 := g_MetaOnHold.Has(3) ? g_MetaOnHold[3] : ""
-	meta4 := g_MetaOnHold.Has(4) ? g_MetaOnHold[4] : ""
-
+	meta1 := SafeMetaOnHold(1)
+	meta2 := SafeMetaOnHold(2)
+	meta3 := SafeMetaOnHold(3)
+	meta4 := SafeMetaOnHold(4)
+	
 	; 異常時の対処
 	if(RegExMatch(meta1, "^[RLABCD]$") && meta2 == "M" && meta3 == "M" && meta4 == "M")
 	{
-		g_RomajiOnHold[2] := g_RomajiOnHold[1]
-		g_OyaOnHold[2]    := g_OyaOnHold[1]
-		g_KoyubiOnHold[2] := g_KoyubiOnHold[1]
+		g_RomajiOnHold[2] := SafeRomajiOnHold(1)
+		g_OyaOnHold[2]    := SafeOyaOnHold(1)
+		g_KoyubiOnHold[2] := SafeKoyubiOnHold(1)
 		dequeueKey()
 		_KeyInPtn := getKeyinPtnFromQueue()
 	}
 	
-	_mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
-	chkKey3 := _mode . g_MojiOnHold[3] . g_MojiOnHold[2] . g_MojiOnHold[1]
-	chkKey2 := _mode . g_MojiOnHold[2] . g_MojiOnHold[1]
+	_mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+	chkKey3 := _mode . SafeMojiOnHold(3) . SafeMojiOnHold(2) . SafeMojiOnHold(1)
+	chkKey2 := _mode . SafeMojiOnHold(2) . SafeMojiOnHold(1)
 	
 	if(kdn.Has(chkKey3) && kdn[chkKey3] != "") {
-		SendOnHold(_mode, g_MojiOnHold[3] . g_MojiOnHold[2] . g_MojiOnHold[1], g_ZeroDelay)	
+		SendOnHold(_mode, SafeMojiOnHold(3) . SafeMojiOnHold(2) . SafeMojiOnHold(1), g_ZeroDelay)	
 		_KeyInPtn := clearQueue()
 		State.Timeout := 60000
 		State.SendTick := INFINITE
 	} else if(kdn.Has(chkKey2) && kdn[chkKey2] != "") {
-		SendOnHold(_mode, g_MojiOnHold[2] . g_MojiOnHold[1], g_ZeroDelay)
+		SendOnHold(_mode, SafeMojiOnHold(2) . SafeMojiOnHold(1), g_ZeroDelay)
 		dequeueKey()
 		dequeueKey()
-		SubSendUp(g_MojiOnHold[1])
+		SubSendUp(SafeMojiOnHold(1))
 		_KeyInPtn := SendOnHoldM()
 		_KeyInPtn := clearQueue()
 		return _KeyInPtn
 	} else {
-		SendOnHold(_mode, g_MojiOnHold[1], g_ZeroDelay)
+		SendOnHold(_mode, SafeMojiOnHold(1), g_ZeroDelay)
 		dequeueKey()
-		SubSendUp(g_MojiOnHold[1])
+		SubSendUp(SafeMojiOnHold(1))
 		
 		_KeyInPtn := SendOnHoldMM()
 		if(_KeyInPtn == "M") {
-			SubSendUp(g_MojiOnHold[1])
+			SubSendUp(SafeMojiOnHold(1))
 			_KeyInPtn := SendOnHoldM()
 			_KeyInPtn := clearQueue()
 		} else {
@@ -246,20 +248,26 @@ SendOnHoldO()
 	global
 	local _KeyInPtn, _vOut
 
-	meta1 := g_MetaOnHold.Has(1) ? g_MetaOnHold[1] : ""
+	meta1 := SafeMetaOnHold(1)
 	if(RegExMatch(meta1, "^[RLABCD]$")) 
 	{
-		if(g_KeySingle == "有効" || g_MojiOnHold[1] == "A02") {
-			chkKey := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1] . g_MojiOnHold[1]
-			_vOut := kdn.Has(chkKey) ? kdn[chkKey] : ""
-			SubSendOne(_vOut)
-			SetKeyupSave(kup.Has(chkKey) ? kup[chkKey] : "", g_MojiOnHold[1])
+		if(g_KeySingle == "有効" ||SafeMojiOnHold(1) == "A02")
+		{
+			if(g_OnHoldIdx == 1
+			&& !RegExMatch(State.KeyInPtn, "M")
+			&& !GetPushedKeys()) 
+			{
+				chkKey := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1) . SafeMojiOnHold(1)
+				_vOut := kdn.Has(chkKey) ? kdn[chkKey] : ""
+				SubSendOne(_vOut)
+				SetKeyupSave(kup.Has(chkKey) ? kup[chkKey] : "", SafeMojiOnHold(1))
+			}
 		}
 		dequeueKey()
 	}
 	queueClearKeyup()
 
-	if(g_MetaOnHold.Has(1) && g_MetaOnHold[1] == "M") {	; 直前の文字キーをシフトオフする
+	if(SafeMetaOnHold(1) == "M") {	; 直前の文字キーをシフトオフする
 		g_OyaOnHold[1] := "N"
 	}
 	if(g_Continue == 0) 
@@ -343,14 +351,8 @@ SubSend(_vOut)
 		}
 		
 		if(State.Koyubi == "K" && isCapsLock(_sendch) && InStr(_stroke, "{vk") == 0) {
-			if(_scnt >= 4) 
-			{
-				SetKeyDelay(16, -1)
-				_scnt := 0
-			} else {
-				SetKeyDelay(-1, -1)
-			}
-			Send("{Blind}{CapsLock}")
+			SetKeyDelay(-1, 10)
+			SendEvent("{Blind}{CapsLock}")
 			_scnt +=  1
 			RegLogs("", State.KeyInPtn, State.Trigger, State.Timeout, "{capslock}")
 			State.Timeout := ""
@@ -360,24 +362,18 @@ SubSend(_vOut)
 			}
 			if(_scnt >= 4)
 			{
-				SetKeyDelay(64, -1)
+				SetKeyDelay(64, 10)
 				_scnt := 0
 			} else {
-				SetKeyDelay(-1, -1)
+				SetKeyDelay(-1, 10)
 			}
-			Send(_stroke)
+			SendEvent(_stroke)
 			_scnt += 1
 			RegLogs("", State.KeyInPtn, State.Trigger, State.Timeout, _stroke)
 			State.Timeout := ""
 			
-			if(_scnt >= 4) 
-			{
-				SetKeyDelay(16, -1)
-				_scnt := 0
-			} else {
-				SetKeyDelay(-1, -1)
-			}
-			Send("{Blind}{CapsLock}")
+			SetKeyDelay(-1, 10)
+			SendEvent("{Blind}{CapsLock}")
 			_scnt += 1
 			RegLogs("", State.KeyInPtn, State.Trigger, State.Timeout, "{capslock}")
 			State.Timeout := ""
@@ -387,12 +383,12 @@ SubSend(_vOut)
 			}
 			if(_scnt >= 4)
 			{
-				SetKeyDelay(64, -1)
+				SetKeyDelay(64, 10)
 				_scnt := 0
 			} else {
-				SetKeyDelay(-1, -1)
+				SetKeyDelay(-1, 10)
 			}
-			Send(_stroke)
+			SendEvent(_stroke)
 			RegLogs("", State.KeyInPtn, State.Trigger, State.Timeout, _stroke)
 			_scnt += 1
 			State.Timeout := ""
@@ -408,9 +404,9 @@ SubSendOne(_vOut)
 	global
 	
 	if(_vOut != "") {
-		SetKeyDelay(-1, -1)
+		SetKeyDelay(-1, 10)
 		_vOut2 := "{Blind}" . _vOut
-		Send(_vOut2)
+		SendEvent(_vOut2)
 		RegLogs("", State.KeyInPtn, State.Trigger, State.Timeout, _vOut2)
 		State.Timeout := ""
 	}
@@ -529,13 +525,13 @@ SendZeroDelayOM()
 
 	_cntM := countMoji()
 	if(_cntM >= 1) {
-		meta1 := g_MetaOnHold.Has(1) ? g_MetaOnHold[1] : ""
-		meta2 := g_MetaOnHold.Has(2) ? g_MetaOnHold[2] : ""
+		meta1 := SafeMetaOnHold(1)
+		meta2 := SafeMetaOnHold(2)
 		if(RegExMatch(meta1, "^[RLABCD]$") && meta2 == "M")
 		{
-			SendZeroDelay(g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1], g_MojiOnHold[2], g_ZeroDelay)
+			SendZeroDelay(SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1), SafeMojiOnHold(2), g_ZeroDelay)
 		} else if(meta1 == "M") {
-			SendZeroDelay(g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1], g_MojiOnHold[1], g_ZeroDelay)
+			SendZeroDelay(SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1), SafeMojiOnHold(1), g_ZeroDelay)
 		}
 	}
 }
@@ -598,14 +594,14 @@ SetTimeout(_KeyInPtn)
 	global
 	local _mode, _Timeout
 
-	_mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]	
+	_mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)	
 	
 	if(_KeyInPtn == "") {
 		_Timeout := 60000
 	} else if(_KeyInPtn == "M") {
 		if(g_OnHoldIdx == 0) {
 			_Timeout := Min(Floor((g_Threshold * (100 - g_OverlapMO)) / g_OverlapMO), g_MaxTimeout)
-		} else if(ksc.Has(_mode . g_MojiOnHold[g_OnHoldIdx]) && ksc[_mode . g_MojiOnHold[g_OnHoldIdx]] <= 1) {
+		} else if(ksc.Has(_mode . SafeMojiOnHold(g_OnHoldIdx)) && ksc[_mode . SafeMojiOnHold(g_OnHoldIdx)] <= 1) {
 			_Timeout := Min(Floor((g_Threshold * (100 - g_OverlapMO)) / g_OverlapMO), g_MaxTimeout)
 			if(g_SimulMode.Count != 0) {
 				_Timeout := Max(_Timeout, Min(Floor((g_ThresholdSS * (100 - g_OverlapSS)) / g_OverlapSS), g_MaxTimeout))
@@ -617,7 +613,7 @@ SetTimeout(_KeyInPtn)
 		if(g_OnHoldIdx <= 1) {
 			_Timeout := Max(g_ThresholdSS, g_Threshold)
 		} else {
-			chkKey := _mode . g_MojiOnHold[g_OnHoldIdx] . g_MojiOnHold[g_OnHoldIdx - 1]
+			chkKey := _mode . SafeMojiOnHold(g_OnHoldIdx) . SafeMojiOnHold(g_OnHoldIdx-1)
 			if(ksc.Has(chkKey) && ksc[chkKey] <= 2) {
 				_Timeout := Max(g_ThresholdSS, g_Threshold)
 			} else {
@@ -625,8 +621,8 @@ SetTimeout(_KeyInPtn)
 			}
 		}
 	} else if(_KeyInPtn == "MMm") {
-		g_Interval["S12"]  := g_TDownOnHold[2] - g_TDownOnHold[1]
-		g_Interval["S2_1"] := g_TUpOnHold[1] - g_TDownOnHold[2]
+		g_Interval["S12"]  := SafeTDownOnHold(2) - SafeTDownOnHold(1)
+		g_Interval["S2_1"] := SafeTUpOnHold(1) - SafeTDownOnHold(2)
 		_Timeout := Min(Floor((g_Interval["S2_1"] * (100 - g_OverlapSS)) / g_OverlapSS) - g_Interval["S12"], g_MaxTimeout)
 	} else if(_KeyInPtn == "MMM") {
 		_Timeout := 0
@@ -634,24 +630,24 @@ SetTimeout(_KeyInPtn)
 		_Timeout := 60000
 	} else if(RegExMatch(_KeyInPtn, "^[RLABCD]M$")) {
 		if(g_OnHoldIdx == 2) {
-			g_Interval[State.Oya . "M"] := g_TDownOnHold[g_OnHoldIdx] - g_OyaTick[State.Oya]
+			g_Interval[State.Oya . "M"] := SafeTDownOnHold(g_OnHoldIdx) - g_OyaTick[State.Oya]
 			_Timeout := Min(Floor(g_Interval[State.Oya . "M"] * g_OverlapOM / (100 - g_OverlapOM)), g_MaxTimeout)
 		} else {
 			_Timeout := Min(g_Threshold, g_MaxTimeout)
 		}
 	} else if(RegExMatch(_KeyInPtn, "^[RLABCD]M[RLABCD]$")) {
-		g_Interval["M" . State.Oya] := g_OyaTick[State.Oya] - g_TDownOnHold[g_OnHoldIdx-1]
+		g_Interval["M" . State.Oya] := g_OyaTick[State.Oya] - SafeTDownOnHold(g_OnHoldIdx-1)
 		_Timeout := Min(Floor(g_Interval["M" . State.Oya] * g_OverlapMO / (100 - g_OverlapMO)), g_MaxTimeout)
 	} else if(RegExMatch(_KeyInPtn, "^M[RLABCD]$")) {
-		g_Interval["M" . State.Oya] := g_OyaTick[State.Oya] - g_TDownOnHold[g_OnHoldIdx-1]
+		g_Interval["M" . State.Oya] := g_OyaTick[State.Oya] - SafeTDownOnHold(g_OnHoldIdx-1)
 		_Timeout := Min(Floor(g_Interval["M" . State.Oya] * g_OverlapMO / (100 - g_OverlapMO)), g_MaxTimeout)
 	} else if(RegExMatch(_KeyInPtn, "^[RLABCD]M[rlabcd]$")) {
-		wOya := g_OyaOnHold[g_OnHoldIdx]
-		g_Interval["M_" . wOya] := g_TDownOnHold[g_OnHoldIdx-1] - g_TUpOnHold[g_OnHoldIdx]
+		wOya := SafeOyaOnHold(g_OnHoldIdx)
+		g_Interval["M_" . wOya] := SafeTDownOnHold(g_OnHoldIdx-1) - SafeTUpOnHold(g_OnHoldIdx)
 		_Timeout := Min(Floor((g_Interval["M_" . wOya] * (100 - g_OverlapOMO)) / g_OverlapOMO), g_MaxTimeout)
 	} else if(RegExMatch(_KeyInPtn, "^[RLABCD]M[RLABCD][rlabcd]$")) {
-		wOya := g_OyaOnHold[g_OnHoldIdx-1]
-		g_Interval[wOya] := g_TDownOnHold[g_OnHoldIdx-1] - g_TUpOnHold[g_OnHoldIdx]
+		wOya := SafeOyaOnHold(g_OnHoldIdx-1)
+		g_Interval[wOya] := SafeTDownOnHold(g_OnHoldIdx-1) - SafeTUpOnHold(g_OnHoldIdx)
 		_Timeout := Min(Floor((g_Interval[wOya] * (100 - g_OverlapOMO)) / g_OverlapOMO), g_MaxTimeout)
 	} else {
 		_Timeout := 60000

@@ -7,6 +7,7 @@
 ;-----------------------------------------------------------------------
 #Requires AutoHotkey v2.0
 #SingleInstance Off
+#UseHook true
 ; 外部ファイルの読み込み
 #Include IMEv2.ahk 
 #Include ReadLayout6.ahk
@@ -105,7 +106,7 @@ global g_Offset := 20
 global g_vOut := ""
 
 global INFINITE := 2147483648
-
+global vOverlap := ""
 global g_OyaTick   := Map()
 global g_OyaUpTick := Map()
 global g_Interval  := Map()
@@ -414,26 +415,26 @@ ProcessKeyDown(meta) {
             keyTick[g_layoutPos] := pf_TickCount
 
             if(State.KeyInPtn == "MM" || State.KeyInPtn == "MMm") {
-                _mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
-                chkKey := _mode . g_MojiOnHold[2] . g_MojiOnHold[1]
+                _mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+                chkKey := _mode . SafeMojiOnHold(2) . SafeMojiOnHold(1)
                 if(!kdn.Has(chkKey) || kdn[chkKey] == "") {
                     State.KeyInPtn := SendOnHoldM()
-                    SubSendUp(g_MojiOnHold[1])
+                    SubSendUp(SafeMojiOnHold(1))
                     State.Timeout := SetTimeout(State.KeyInPtn)
                     State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
                 } else {
-                    g_Interval["M" . g_metaKey] := pf_TickCount - g_TDownOnHold[2]
-                    g_Interval["S12"]  := g_TDownOnHold[2] - g_TDownOnHold[1]
+                    g_Interval["M" . g_metaKey] := pf_TickCount - SafeTDownOnHold(2)
+                    g_Interval["S12"]  := SafeTDownOnHold(2) - SafeTDownOnHold(1)
                     if(g_Interval["S12"] < g_Interval["M" . g_metaKey]) {
                         State.KeyInPtn := SendOnHoldMM()
                         if(State.KeyInPtn == "M") {
-                            SubSendUp(g_MojiOnHold[1])
+                            SubSendUp(SafeMojiOnHold(1))
                             State.Timeout := SetTimeout(State.KeyInPtn)
                             State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
                         }
                     } else {
                         State.KeyInPtn := SendOnHoldM()
-                        SubSendUp(g_MojiOnHold[1])
+                        SubSendUp(SafeMojiOnHold(1))
                         State.Timeout := SetTimeout(State.KeyInPtn)
                         State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
                     }
@@ -447,7 +448,7 @@ ProcessKeyDown(meta) {
                 State.Timeout := SetTimeout(State.KeyInPtn)
                 State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
             } else if(State.KeyInPtn == "M") {
-                g_Interval["M" . g_metaKey] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx]
+                g_Interval["M" . g_metaKey] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx)
                 if(g_Interval["M" . g_metaKey] > Min(Floor((g_Threshold*(100-g_OverlapMO))/g_OverlapMO), g_MaxTimeout)) {
                     State.KeyInPtn := SendOnHoldM()
                     State.KeyInPtn := enqueueKey(State.Romaji, g_metaKey, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
@@ -455,7 +456,7 @@ ProcessKeyDown(meta) {
                     State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
                 } else {
                     State.KeyInPtn := enqueueKey(State.Romaji, g_metaKey, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
-                    g_Interval["M" . g_metaKey] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx - 1]
+                    g_Interval["M" . g_metaKey] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx-1)
                     State.Timeout := Min(Floor(g_Interval["M" . g_metaKey]*g_OverlapMO/(100-g_OverlapMO)), g_MaxTimeout)
                     State.SendTick := pf_TickCount + Min(Floor(g_Interval["M" . g_metaKey]*g_OverlapMO/(100-g_OverlapMO)), g_MaxTimeout)
                 }
@@ -470,9 +471,12 @@ ProcessKeyDown(meta) {
                 State.Timeout := SetTimeout(State.KeyInPtn)
                 State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M$")) {
+                State.KeyInPtn := SendOnHoldOM()
+                /*
                 State.KeyInPtn := enqueueKey(State.Romaji, g_metaKey, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
-                State.Timeout := g_TUpOnHold[g_OnHoldIdx] - g_TDownOnHold[g_OnHoldIdx-1]
+                State.Timeout := SafeTUpOnHold(g_OnHoldIdx) - SafeTDownOnHold(g_OnHoldIdx-1)
                 State.SendTick := calcSendTick(keyTick[g_layoutPos], State.Timeout)
+                */
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M[rlabcd]$")) {
                 State.KeyInPtn := SendOnHoldOM()
             }
@@ -489,7 +493,7 @@ ProcessKeyDown(meta) {
                     Critical("Off")
                     return
                 }
-                _mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
+                _mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
                 if(ksc.Has(_mode . g_layoutPos) && ksc[_mode . g_layoutPos] > 1) {
                     if (keyState[g_layoutPos] == 2) {
                         if(pf_TickCount - keyTick[g_layoutPos] < g_MaxTimeoutM) {
@@ -537,10 +541,10 @@ ProcessKeyDown(meta) {
             }
             
             if(State.KeyInPtn == "M") {
-                if(g_MetaOnHold[1] == "M") {
-                    _mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
+                if(SafeMetaOnHold(1) == "M") {
+                    _mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
                     chkA := _mode . g_layoutPos
-                    chkB := _mode . g_MojiOnHold[1] . g_layoutPos
+                    chkB := _mode . SafeMojiOnHold(1) . g_layoutPos
                     if(!ksc.Has(chkA) || ksc[chkA] <= 1 
                     || (ksc[chkA] == 2 && (!kdn.Has(chkB) || kdn[chkB] == ""))
                     || (!ksc.Has(chkB) || ksc[chkB] == 0)) {
@@ -549,9 +553,9 @@ ProcessKeyDown(meta) {
                 }
             } else if(RegExMatch(State.KeyInPtn, "^M[RLABCD]$")) {
                 if(g_Continue == 0) {
-                    wOya := g_OyaOnHold[g_OnHoldIdx]
-                    g_Interval["M" . wOya] := g_TDownOnHold[g_OnHoldIdx] - g_TDownOnHold[g_OnHoldIdx-1]
-                    g_Interval[wOya . "M"] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx]
+                    wOya := SafeOyaOnHold(g_OnHoldIdx)
+                    g_Interval["M" . wOya] := SafeTDownOnHold(g_OnHoldIdx) - SafeTDownOnHold(g_OnHoldIdx-1)
+                    g_Interval[wOya . "M"] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx)
                     if(g_Interval["M" . wOya] < g_Interval[wOya . "M"]) {
                         State.KeyInPtn := SendOnHoldMO()
                     } else {
@@ -561,9 +565,11 @@ ProcessKeyDown(meta) {
                     State.KeyInPtn := SendOnHoldMO()
                 }
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M$")) {
-                _mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
+                State.KeyInPtn := SendOnHoldOM()
+                /*
+                _mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
                 chkA := _mode . g_layoutPos
-                chkB := _mode . g_MojiOnHold[g_OnHoldIdx] . g_layoutPos
+                chkB := _mode . SafeMojiOnHold(g_OnHoldIdx) . g_layoutPos
                 if(!ksc.Has(chkA) || ksc[chkA] <= 1 
                 || (ksc[chkA] == 2 && (!kdn.Has(chkB) || kdn[chkB] == ""))
                 || (!ksc.Has(chkB) || ksc[chkB] == 0)) {
@@ -571,70 +577,50 @@ ProcessKeyDown(meta) {
                 } else if(g_OnHoldIdx == 1) {
                     State.KeyInPtn := SendOnHoldOM()
                 } else {
-                    wOya := g_OyaOnHold[1]
-                    g_Interval[wOya . "M"] := g_TDownOnHold[2] - g_TDownOnHold[1]
-                    g_Interval["S12"] := pf_TickCount - g_TDownOnHold[2]
+                    wOya := SafeOyaOnHold(1)
+                    g_Interval[wOya . "M"] := SafeTDownOnHold(2) - SafeTDownOnHold(1)
+                    g_Interval["S12"] := pf_TickCount - SafeTDownOnHold(2)
                     if(g_Interval[wOya . "M"] < g_Interval["S12"]) {
                         State.KeyInPtn := SendOnHoldOM()
                     } else {
                         State.KeyInPtn := SendOnHoldO()
                     }
-                }
+                }*/
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M[RLABCD]$")) {
                 State.KeyInPtn := SendOnHoldOM()
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M[rlabcd]$")) {
-                wOya := g_OyaOnHold[g_OnHoldIdx]
-                g_Interval["M_" . wOya] := g_TUpOnHold[g_OnHoldIdx] - g_TDownOnHold[g_OnHoldIdx-1]
-                g_Interval["MM"] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx-1]
-                if(g_Interval["MM"] > 0) {
-                    vOverlap := Floor((g_Interval["M_" . wOya]*100)/g_Interval["MM"])
-                } else {
-                    vOverlap := 0
-                }
-                if(vOverlap >= g_OverlapOMO) {
-                    State.KeyInPtn := SendOnHoldOM()
-                } else {
-                    State.KeyInPtn := SendOnHoldO()
-                    State.KeyInPtn := SendOnHoldM()
-                }
+                State.KeyInPtn := SendOnHoldOM()
+                ; cleanup
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M[RLABCD][rlabcd]$")) {
-                wOya  := g_OyaOnHold[g_OnHoldIdx]
-                wOya1 := g_OyaOnHold[g_OnHoldIdx - 1]
-                g_Interval["M_" . wOya]  := g_TUpOnHold[g_OnHoldIdx] - g_TDownOnHold[g_OnHoldIdx-2]
-                g_Interval[wOya1 . "_M"] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx-1]
-                if(g_Interval["M_" . wOya] > g_Interval[wOya1 . "_M"]) {
-                    State.KeyInPtn := SendOnHoldOM()
-                } else {
-                    State.KeyInPtn := SendOnHoldO()
-                    State.KeyInPtn := SendOnHoldOM()
-                }
+                State.KeyInPtn := SendOnHoldOM()
+                ; cleanup
             } else if(State.KeyInPtn == "MM") {	
-                _mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
+                _mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
                 chkA := _mode . g_layoutPos
-                chkC := _mode . g_MojiOnHold[2] . g_MojiOnHold[1]
+                chkC := _mode . SafeMojiOnHold(2) . SafeMojiOnHold(1)
                 chkB := chkC . g_layoutPos
                 if(!ksc.Has(chkA) || ksc[chkA] <= 2 || (ksc[chkA] == 3 && (!kdn.Has(chkB) || kdn[chkB] == ""))) {
-                    g_Interval["S12"] := g_TDownOnHold[2] - g_TDownOnHold[1]
-                    g_Interval["S23"] := pf_TickCount - g_TDownOnHold[2]
+                    g_Interval["S12"] := SafeTDownOnHold(2) - SafeTDownOnHold(1)
+                    g_Interval["S23"] := pf_TickCount - SafeTDownOnHold(2)
                     if(kdn.Has(chkC) && kdn[chkC] != "" && g_Interval["S12"] < g_Interval["S23"]) {
                         State.KeyInPtn := SendOnHoldMM()
-                        SubSendUp(g_MojiOnHold[1])
+                        SubSendUp(SafeMojiOnHold(1))
                     } else {
                         State.KeyInPtn := SendOnHoldM()
-                        SubSendUp(g_MojiOnHold[1])
+                        SubSendUp(SafeMojiOnHold(1))
                     }
                 }
             } else if(State.KeyInPtn == "MMm") {
-                g_Interval["S12"] := g_TDownOnHold[2] - g_TDownOnHold[1]
-                g_Interval["S23"] := pf_TickCount - g_TDownOnHold[2]
-                _mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
-                chkC := _mode . g_MojiOnHold[2] . g_MojiOnHold[1]
+                g_Interval["S12"] := SafeTDownOnHold(2) - SafeTDownOnHold(1)
+                g_Interval["S23"] := pf_TickCount - SafeTDownOnHold(2)
+                _mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+                chkC := _mode . SafeMojiOnHold(2) . SafeMojiOnHold(1)
                 if(kdn.Has(chkC) && kdn[chkC] != "" && g_Interval["S12"] < g_Interval["S23"]) {
                     State.KeyInPtn := SendOnHoldMM()
-                    SubSendUp(g_MojiOnHold[1])
+                    SubSendUp(SafeMojiOnHold(1))
                 } else {
                     State.KeyInPtn := SendOnHoldM()
-                    SubSendUp(g_MojiOnHold[1])
+                    SubSendUp(SafeMojiOnHold(1))
                 }
             } else if(State.KeyInPtn == "MMM") {
                 State.KeyInPtn := SendOnHoldMMM()
@@ -647,15 +633,15 @@ ProcessKeyDown(meta) {
                     State.KeyInPtn := enqueueKey(State.Romaji, State.Oya, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
                     State.Timeout := SetTimeout(State.KeyInPtn)
                     State.SendTick :=  calcSendTick(pf_TickCount, State.Timeout)
-                    JudgePushedKeys(g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1], g_MojiOnHold[1])
+                    JudgePushedKeys(SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1), SafeMojiOnHold(1))
                     if(State.KeyInPtn == "M") {
-                        SendZeroDelay(g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1], g_MojiOnHold[1], g_ZeroDelay)
+                        SendZeroDelay(SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1), SafeMojiOnHold(1), g_ZeroDelay)
                     }
                 } else if(State.KeyInPtn == "M") {
                     State.KeyInPtn := enqueueKey(State.Romaji, State.Oya, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
                     State.Timeout := SetTimeout(State.KeyInPtn)
                     State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
-                    JudgePushedKeys(g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1], g_MojiOnHold[2] . g_MojiOnHold[1])
+                    JudgePushedKeys(SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1), SafeMojiOnHold(2) . SafeMojiOnHold(1))
                 } else if(State.KeyInPtn == "MM") {
                     enqueueKey(State.Romaji, State.Oya, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
                     State.KeyInPtn := SendOnHoldMMM()
@@ -669,17 +655,17 @@ ProcessKeyDown(meta) {
                     g_Interval[State.KeyInPtn] := pf_TickCount - g_OyaTick[State.Oya]
                     State.Timeout := g_MaxTimeout
                     State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
-                    JudgePushedKeys(g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1], g_MojiOnHold[1])
+                    JudgePushedKeys(SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1), SafeMojiOnHold(1))
                     if(State.KeyInPtn == State.Oya . "M") {
                         SendZeroDelayOM()
                     }
                 } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]$")) {
-                    wOya := g_OyaOnHold[1]
+                    wOya := SafeOyaOnHold(1)
                     State.KeyInPtn := enqueueKey(State.Romaji, wOya, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
-                    g_Interval[State.KeyInPtn] := pf_TickCount - g_TDownOnHold[1]
+                    g_Interval[State.KeyInPtn] := pf_TickCount - SafeTDownOnHold(1)
                     State.Timeout := Min(Floor(g_Interval[State.KeyInPtn]*g_OverlapOM/(100-g_OverlapOM)), g_MaxTimeout)
                     State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
-                    JudgePushedKeys(g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1], g_MojiOnHold[1])
+                    JudgePushedKeys(SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1), SafeMojiOnHold(1))
                     if(State.KeyInPtn == State.Oya . "M") {
                         SendZeroDelayOM()
                     }
@@ -688,7 +674,7 @@ ProcessKeyDown(meta) {
                     State.KeyInPtn := enqueueKey(State.Romaji, State.Oya, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
                     State.Timeout := SetTimeout(State.KeyInPtn)
                     State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
-                    JudgePushedKeys(g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1], g_MojiOnHold[2] . g_MojiOnHold[1])
+                    JudgePushedKeys(SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1), SafeMojiOnHold(2) . SafeMojiOnHold(1))
                 } else if(RegExMatch(State.KeyInPtn, "^M[RLABCD]$")) {
                     mergeMOKey()
                     State.KeyInPtn := enqueueKey(State.Romaji, State.Oya, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKey, pf_TickCount)
@@ -826,28 +812,33 @@ ProcessKeyUp(meta) {
                 if(State.KeyInPtn == g_metaKey) {
                     State.KeyInPtn := SendOnHoldO()
                 } else if(State.KeyInPtn == "M" . g_metaKey) {
-                    g_Interval[g_metaKey . "_" . g_metaKey] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx]
-                    g_Interval["M_" . g_metaKey] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx-1]
+                    g_Interval[g_metaKey . "_" . g_metaKey] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx)
+                    g_Interval["M_" . g_metaKey] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx-1)
                     if(g_Interval["M_" . g_metaKey] > 0) {
                         vOverlap := Floor((g_Interval[g_metaKey . "_" . g_metaKey]*100)/g_Interval["M_" . g_metaKey])
+                        State.KeyInPtn := SendOnHoldMO()
                     } else {
                         vOverlap := 0
+                        State.KeyInPtn := SendOnHoldM()
+                        State.KeyInPtn := SendOnHoldO()
                     }
+                    /*
                     if(vOverlap >= g_OverlapMO) {
                         State.KeyInPtn := SendOnHoldMO()
                     } else {
                         State.KeyInPtn := SendOnHoldM()
                         State.KeyInPtn := SendOnHoldO()
                     }
+                    */
                 } else if(State.KeyInPtn == g_metaKey . "M") {
-                    g_Interval["M_" . g_metaKey] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx]
+                    g_Interval["M_" . g_metaKey] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx)
                     g_Interval[g_metaKey . "_" . g_metaKey] := pf_TickCount - g_OyaTick[g_metaKey]
                     if(g_Continue == 1 && g_OnHoldIdx == 1) {
                         if(g_Interval["M_" . g_metaKey] > g_Threshold) {
                             State.KeyInPtn := SendOnHoldOM()
                         } else {
                             State.KeyInPtn := enqueueKey(State.Romaji, g_metaKey, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKeyUp[g_metaKey], pf_TickCount)
-                            g_Interval["M_" . g_metaKey] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx]
+                            g_Interval["M_" . g_metaKey] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx)
                             State.Timeout := Min(Floor((g_Interval["M_" . g_metaKey]*(100-g_OverlapOMO))/g_OverlapOMO), g_MaxTimeout)
                             State.SendTick := pf_TickCount + Min(Floor((g_Interval["M_" . g_metaKey]*(100-g_OverlapOM))/g_OverlapOM), g_MaxTimeout)
                         }
@@ -859,7 +850,7 @@ ProcessKeyUp(meta) {
                         }
                         if(vOverlap < g_OverlapOM && g_Interval["M_" . g_metaKey] <= g_Tau) {
                             State.KeyInPtn := enqueueKey(State.Romaji, g_metaKey, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKeyUp[g_metaKey], pf_TickCount)
-                            g_Interval["M_" . g_metaKey] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx]
+                            g_Interval["M_" . g_metaKey] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx)
                             State.Timeout := Min(Floor((g_Interval["M_" . g_metaKey]*(100-g_OverlapOMO))/g_OverlapOMO), g_MaxTimeout)
                             State.SendTick := pf_TickCount + Min(Floor((g_Interval["M_" . g_metaKey]*(100-g_OverlapOM))/g_OverlapOM), g_MaxTimeout)
                         } else {
@@ -867,14 +858,13 @@ ProcessKeyUp(meta) {
                         }
                     }
                 } else if(RegExMatch(State.KeyInPtn, "^" . g_metaKey . "M[RLABCD]$")) {
-                    State.KeyInPtn := enqueueKey(State.Romaji, g_metaKey, KoyubiOrSans(State.Koyubi, State.Sans), g_layoutPos, g_metaKeyUp[g_metaKey], pf_TickCount)
-                    State.Timeout := g_TDownOnHold[g_OnHoldIdx-2] - g_TDownOnHold[g_OnHoldIdx-1]
-                    State.SendTick := pf_TickCount + State.Timeout
+                    State.KeyInPtn := SendOnHoldMO()
+                    ; cleanup
                 } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M" . g_metaKey . "$")) {
                     clearLastQueue()
                 } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M" . g_metaKey . "[rlabcd]$")) {
-                    wOya := g_OyaOnHold[g_OnHoldIdx]
-                    g_Interval["M_" . wOya] := g_TUpOnHold[g_OnHoldIdx] - g_TDownOnHold[g_OnHoldIdx-2]
+                    wOya := SafeOyaOnHold(g_OnHoldIdx)
+                    g_Interval["M_" . wOya] := SafeTUpOnHold(g_OnHoldIdx) - SafeTDownOnHold(g_OnHoldIdx-2)
                     g_Interval[g_metaKey . "_" . g_metaKey] := pf_TickCount - g_OyaTick[g_metaKey]
                     if(g_Interval["M_" . wOya] > g_Interval[g_metaKey . "_" . g_metaKey]) {
                         State.KeyInPtn := SendOnHoldOM()
@@ -887,6 +877,8 @@ ProcessKeyUp(meta) {
             SubSendUp(g_layoutPos)
             
             if(State.Oya == g_metaKey) {
+                State.Oya := "N"
+                /*
                 if(g_Continue == 1) {
                     State.Oya := "N"
                     _oyaOther := "RLABCD"
@@ -908,6 +900,7 @@ ProcessKeyUp(meta) {
                 } else {
                     State.Oya := "N"
                 }
+                */
             }
             Critical("Off")
             Sleep(-1)
@@ -929,21 +922,21 @@ ProcessKeyUp(meta) {
             setKeyup(g_layoutPos, pf_TickCount)
 
             if(State.KeyInPtn == "M") {
-                if(g_layoutPos == g_MojiOnHold[1]) {
+                if(g_layoutPos == SafeMojiOnHold(1)) {
                     State.KeyInPtn := SendOnHoldM()
                 }
             } else if(State.KeyInPtn == "MM") {
-                if(g_layoutPos == g_MojiOnHold[1]) {
-                    _mode := g_RomajiOnHold[1] . g_OyaOnHold[1] . g_KoyubiOnHold[1]
-                    chk := _mode . g_MojiOnHold[2] . g_MojiOnHold[1]
+                if(g_layoutPos == SafeMojiOnHold(1)) {
+                    _mode := SafeRomajiOnHold(1) . SafeOyaOnHold(1) . SafeKoyubiOnHold(1)
+                    chk := _mode . SafeMojiOnHold(2) . SafeMojiOnHold(1)
                     if(!kdn.Has(chk) || kdn[chk] == "") {
                         State.KeyInPtn := SendOnHoldM()
-                        SubSendUp(g_MojiOnHold[1])
+                        SubSendUp(SafeMojiOnHold(1))
                         State.Timeout := SetTimeout(State.KeyInPtn)
                         State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
                     } else {
-                        g_Interval["S1_1"] := g_TUpOnHold[1] - g_TDownOnHold[1]
-                        g_Interval["S2_1"] := g_TUpOnHold[1] - g_TDownOnHold[2]
+                        g_Interval["S1_1"] := SafeTUpOnHold(1) - SafeTDownOnHold(1)
+                        g_Interval["S2_1"] := SafeTUpOnHold(1) - SafeTDownOnHold(2)
                         if(g_Interval["S1_1"] > 0) {
                             vOverlap := Floor((100*g_Interval["S2_1"])/g_Interval["S1_1"])
                         } else {
@@ -952,7 +945,7 @@ ProcessKeyUp(meta) {
                         if(g_Interval["S2_1"] > g_ThresholdSS || g_OverlapSS <= vOverlap) {
                             State.KeyInPtn := SendOnHoldMM()
                             if(State.KeyInPtn == "M") {
-                                SubSendUp(g_MojiOnHold[1])
+                                SubSendUp(SafeMojiOnHold(1))
                                 State.KeyInPtn := SendOnHoldM()
                             }
                         } else {
@@ -961,17 +954,17 @@ ProcessKeyUp(meta) {
                             State.SendTick := calcSendTick(pf_TickCount, State.Timeout)
                         }
                     }
-                } else if(g_layoutPos == g_MojiOnHold[2]) {
+                } else if(g_layoutPos == SafeMojiOnHold(2)) {
                     State.KeyInPtn := SendOnHoldMM()
                     if(State.KeyInPtn == "M") {
-                        SubSendUp(g_MojiOnHold[1])
+                        SubSendUp(SafeMojiOnHold(1))
                         State.KeyInPtn := SendOnHoldM()
                     }
                 }
             } else if(State.KeyInPtn == "MMm") {
-                if(g_layoutPos == g_MojiOnHold[2]) {
-                    g_Interval["S1_2"] := g_TUpOnHold[2] - g_TDownOnHold[1]
-                    g_Interval["S2_1"] := g_TUpOnHold[1] - g_TDownOnHold[2]
+                if(g_layoutPos == SafeMojiOnHold(2)) {
+                    g_Interval["S1_2"] := SafeTUpOnHold(2) - SafeTDownOnHold(1)
+                    g_Interval["S2_1"] := SafeTUpOnHold(1) - SafeTDownOnHold(2)
                     if (g_Interval["S1_2"] > 0) {
                         vOverlap := Floor((100*g_Interval["S2_1"])/g_Interval["S1_2"])
                     } else {
@@ -980,22 +973,22 @@ ProcessKeyUp(meta) {
                     if(g_OverlapSS <= vOverlap) {
                         State.KeyInPtn := SendOnHoldMM()
                         if(State.KeyInPtn == "M") {
-                            SubSendUp(g_MojiOnHold[1])
+                            SubSendUp(SafeMojiOnHold(1))
                             State.KeyInPtn := SendOnHoldM()
                         }
                     } else {
                         State.KeyInPtn := SendOnHoldM()
-                        SubSendUp(g_MojiOnHold[1])
+                        SubSendUp(SafeMojiOnHold(1))
                         State.KeyInPtn := SendOnHoldM()
                     }
                 }
             } else if(State.KeyInPtn == "MMM") {
                 State.KeyInPtn := SendOnHoldMMM()
             } else if(RegExMatch(State.KeyInPtn, "^M[RLABCD]$")) {
-                if(g_MetaOnHold.Has(1) && g_MetaOnHold[1] == "M" && g_layoutPos == g_MojiOnHold[1]) {
-                    wOya := g_OyaOnHold[g_OnHoldIdx]
-                    g_Interval["M_M"] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx-1]
-                    g_Interval[wOya . "_M"] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx]
+                if(SafeMetaOnHold(1) == "M" && g_layoutPos == SafeMojiOnHold(1)) {
+                    wOya := SafeOyaOnHold(g_OnHoldIdx)
+                    g_Interval["M_M"] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx-1)
+                    g_Interval[wOya . "_M"] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx)
                     if(g_Interval["M_M"] > 0) {
                         vOverlap := Floor((100*g_Interval[wOya . "_M"])/g_Interval["M_M"])
                     } else {
@@ -1010,16 +1003,16 @@ ProcessKeyUp(meta) {
                     }
                 }
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M[RLABCD]?$")) {
-                if((g_MetaOnHold.Has(1) && g_MetaOnHold[1] == "M" && g_layoutPos == g_MojiOnHold[1])
-                || (g_MetaOnHold.Has(2) && g_MetaOnHold[2] == "M" && g_layoutPos == g_MojiOnHold[2])) {
+                if((SafeMetaOnHold(1) == "M" && g_layoutPos == SafeMojiOnHold(1))
+                || (SafeMetaOnHold(2) == "M" && g_layoutPos == SafeMojiOnHold(2))) {
                     State.KeyInPtn := SendOnHoldOM()
                 }
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M[rlabcd]$")) {
-                if((g_MetaOnHold.Has(1) && g_MetaOnHold[1] == "M" && g_layoutPos == g_MojiOnHold[1])
-                || (g_MetaOnHold.Has(2) && g_MetaOnHold[2] == "M" && g_layoutPos == g_MojiOnHold[2])) {
-                    wOya := g_OyaOnHold[g_OnHoldIdx]
-                    g_Interval["M_" . wOya] := g_TUpOnHold[g_OnHoldIdx] - g_TDownOnHold[g_OnHoldIdx-1]
-                    g_Interval["M_M"] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx-1]
+                if((SafeMetaOnHold(1) == "M" && g_layoutPos == SafeMojiOnHold(1))
+                || (SafeMetaOnHold(2) == "M" && g_layoutPos == SafeMojiOnHold(2))) {
+                    wOya := SafeOyaOnHold(g_OnHoldIdx)
+                    g_Interval["M_" . wOya] := SafeTUpOnHold(g_OnHoldIdx) - SafeTDownOnHold(g_OnHoldIdx-1)
+                    g_Interval["M_M"] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx-1)
                     if(g_Interval["M_M"] > 0) {
                         vOverlap := Floor((g_Interval["M_" . wOya]*100)/g_Interval["M_M"])
                     } else {
@@ -1034,18 +1027,22 @@ ProcessKeyUp(meta) {
                     }
                 }
             } else if(RegExMatch(State.KeyInPtn, "^[RLABCD]M[RLABCD][rlabcd]$")) {
-                if((g_MetaOnHold.Has(1) && g_MetaOnHold[1] == "M" && g_layoutPos == g_MojiOnHold[1])
-                || (g_MetaOnHold.Has(2) && g_MetaOnHold[2] == "M" && g_layoutPos == g_MojiOnHold[2])) {
-                    wOya  := g_OyaOnHold[g_OnHoldIdx]
-                    wOya1 := g_OyaOnHold[g_OnHoldIdx-1]
-                    g_Interval["M_" . wOya] := g_TDownOnHold[g_OnHoldIdx-2] - g_TUpOnHold[g_OnHoldIdx]
-                    g_Interval[wOya1 . "_M"] := pf_TickCount - g_TDownOnHold[g_OnHoldIdx-1]
-                    if(g_Interval["M_" . wOya] > g_Interval[wOya1 . "_M"]) {
+                if((SafeMetaOnHold(1) == "M" && g_layoutPos == SafeMojiOnHold(1))
+                || (SafeMetaOnHold(2) == "M" && g_layoutPos == SafeMojiOnHold(2))) {
+                    if (g_OnHoldIdx < 3) {
                         State.KeyInPtn := SendOnHoldOM()
                     } else {
-                        State.KeyInPtn := SendOnHoldO()
-                        State.KeyInPtn := SendOnHoldOM()
-                        State.KeyInPtn := clearQueue()
+                        wOya  := SafeOyaOnHold(g_OnHoldIdx)
+                        wOya1 := SafeOyaOnHold(g_OnHoldIdx-1)
+                        g_Interval["M_" . wOya] := SafeTDownOnHold(g_OnHoldIdx-2) - SafeTUpOnHold(g_OnHoldIdx)
+                        g_Interval[wOya1 . "_M"] := pf_TickCount - SafeTDownOnHold(g_OnHoldIdx-1)
+                        if(g_Interval["M_" . wOya] > g_Interval[wOya1 . "_M"]) {
+                            State.KeyInPtn := SendOnHoldOM()
+                        } else {
+                            State.KeyInPtn := SendOnHoldO()
+                            State.KeyInPtn := SendOnHoldOM()
+                            State.KeyInPtn := clearQueue()
+                        }
                     }
                 }
             }
@@ -1181,17 +1178,17 @@ PollingTimeout() {
             } else if (State.KeyInPtn == "MM") {
                 State.KeyInPtn := SendOnHoldMM()
                 if (State.KeyInPtn == "M") {
-                    SubSendUp(g_MojiOnHold[1])
+                    SubSendUp(SafeMojiOnHold(1))
                     State.KeyInPtn := SendOnHoldM()
                 }
             } else if (State.KeyInPtn == "MMm") {
                 State.KeyInPtn := SendOnHoldM()
-                SubSendUp(g_MojiOnHold[1])
+                SubSendUp(SafeMojiOnHold(1))
                 State.KeyInPtn := SendOnHoldM()
             } else if (State.KeyInPtn == "MMM") {
                 State.KeyInPtn := SendOnHoldMMM()
             } else if (RegExMatch(State.KeyInPtn, "^[RLABCD]$")) {
-                if (g_MojiOnHold.Has(1) && (g_MojiOnHold[1] == "A02" || g_KeySingle == "有効")) {
+                if (SafeMojiOnHold(1) == "A02" || g_KeySingle == "有効") {
                     State.KeyInPtn := SendOnHoldO()
                 } else {
                     _layout := g_Oya2Layout.Has(State.Oya) ? g_Oya2Layout[State.Oya] : ""
@@ -1212,16 +1209,21 @@ PollingTimeout() {
             } else if (RegExMatch(State.KeyInPtn, "^[RLABCD]M[rlabcd]$")) {
                 State.KeyInPtn := SendOnHoldOM()
             } else if (RegExMatch(State.KeyInPtn, "^[RLABCD]M[RLABCD][rlabcd]$")) {
-                wOya  := g_OyaOnHold[g_OnHoldIdx]
-                wOya1 := g_OyaOnHold[g_OnHoldIdx-1]
-                g_Interval["M_" . wOya] := g_TUpOnHold[g_OnHoldIdx] - g_TDownOnHold[g_OnHoldIdx-2]
-                g_Interval[wOya1 . "_M"] := _TickCount - g_TDownOnHold[g_OnHoldIdx-1]
-                if (g_Interval["M_" . wOya] > g_Interval[wOya1 . "_M"]) {
+                ; キュー要素が3未満なら計算不能なので安全にフラッシュして抜ける
+                if (g_OnHoldIdx < 3) {
                     State.KeyInPtn := SendOnHoldOM()
                 } else {
-                    State.KeyInPtn := SendOnHoldO()
-                    State.KeyInPtn := SendOnHoldOM()
-                    State.KeyInPtn := clearQueue()
+                    wOya  := SafeOyaOnHold(g_OnHoldIdx)
+                    wOya1 := SafeOyaOnHold(g_OnHoldIdx-1)
+                    g_Interval["M_" . wOya] := SafeTUpOnHold(g_OnHoldIdx) - SafeTDownOnHold(g_OnHoldIdx-2)
+                    g_Interval[wOya1 . "_M"] := _TickCount - SafeTDownOnHold(g_OnHoldIdx-1)
+                    if (g_Interval["M_" . wOya] > g_Interval[wOya1 . "_M"]) {
+                        State.KeyInPtn := SendOnHoldOM()
+                    } else {
+                        State.KeyInPtn := SendOnHoldO()
+                        State.KeyInPtn := SendOnHoldOM()
+                        State.KeyInPtn := clearQueue()
+                    }
                 }
             }
             State.KeyInPtn := clearQueue()
@@ -1313,6 +1315,41 @@ ScanModifier() {
 
 ScanOyaKey() {
     global
+    _oya := State.Oya
+    _pos := g_Oya2Layout.Has(_oya) ? g_Oya2Layout[_oya] : ""
+
+    if (_pos == "") {
+        State.Oya := "N"
+        return
+    }
+
+    if (keyHook.Has(_pos) && keyHook[_pos] == "Off") {
+        if (keyState.Has(_pos) && keyState[_pos] != 0) {
+            g_layoutPos := _pos
+            g_metaKey := _oya
+            ProcessKeyUp(_oya)
+        } else {
+            State.Oya := "N"
+        }
+        return
+    }
+
+    _scanCode := ScanCodeHash.Has(_pos) ? ScanCodeHash[_pos] : ""
+    if (_scanCode = "") {
+        State.Oya := "N"
+        return
+    }
+
+    if (GetKeyState(_scanCode, "P") == 0) {
+        if (keyState.Has(_pos) && keyState[_pos] != 0) {
+            g_layoutPos := _pos
+            g_metaKey := _oya
+            ProcessKeyUp(_oya)
+        } else {
+            State.Oya := "N"
+        }
+    }
+    /*
     _pos := g_Oya2Layout.Has(State.Oya) ? g_Oya2Layout[State.Oya] : ""
     if (_pos != "") {
         if (keyHook.Has(_pos) && keyHook[_pos] == "Off") {
@@ -1326,6 +1363,7 @@ ScanOyaKey() {
     } else {
         State.Oya := "N"
     }
+    */
 }
 
 ScanPauseKey() {
@@ -1345,7 +1383,7 @@ ModeInitialize() {
     } else if (State.KeyInPtn == "MM") {
         State.KeyInPtn := SendOnHoldMM()
         if (State.KeyInPtn == "M") {
-            SubSendUp(g_MojiOnHold[1])
+            SubSendUp(SafeMojiOnHold(1))
             State.KeyInPtn := SendOnHoldM()
         }
         State.Timeout := 60000
@@ -1353,7 +1391,7 @@ ModeInitialize() {
     } else if (State.KeyInPtn == "MMm") {
         State.KeyInPtn := SendOnHoldMM()
         if (State.KeyInPtn == "M") {
-            SubSendUp(g_MojiOnHold[1])
+            SubSendUp(SafeMojiOnHold(1))
             State.KeyInPtn := SendOnHoldM()
         }
         State.Timeout := 60000
@@ -1375,16 +1413,21 @@ ModeInitialize() {
         State.Timeout := 60000
         State.SendTick := INFINITE
     } else if (RegExMatch(State.KeyInPtn, "^[RLABCD]M[RLABCD]?[rlabcd]$")) {
-        wOya  := g_OyaOnHold[g_OnHoldIdx]
-        wOya1 := g_OyaOnHold[g_OnHoldIdx-1]
-        g_Interval["M_" . wOya] := g_TDownOnHold[g_OnHoldIdx-2] - g_TUpOnHold[g_OnHoldIdx]
-        g_Interval[wOya1 . "_M"] := Pf_Count() - g_TDownOnHold[g_OnHoldIdx-1]
-        if (g_Interval["M_" . wOya] > g_Interval[wOya1 . "_M"]) {
+        ; キュー要素が3未満なら計算不能なので安全にフラッシュして抜ける
+        if (g_OnHoldIdx < 3) {
             State.KeyInPtn := SendOnHoldOM()
         } else {
-            State.KeyInPtn := SendOnHoldO()
-            State.KeyInPtn := SendOnHoldOM()
-            State.KeyInPtn := clearQueue()
+            wOya  := SafeOyaOnHold(g_OnHoldIdx)
+            wOya1 := SafeOyaOnHold(g_OnHoldIdx-1)
+            g_Interval["M_" . wOya] := SafeTDownOnHold(g_OnHoldIdx-2) - SafeTUpOnHold(g_OnHoldIdx)
+            g_Interval[wOya1 . "_M"] := Pf_Count() - SafeTDownOnHold(g_OnHoldIdx-1)
+            if (g_Interval["M_" . wOya] > g_Interval[wOya1 . "_M"]) {
+                State.KeyInPtn := SendOnHoldOM()
+            } else {
+                State.KeyInPtn := SendOnHoldO()
+                State.KeyInPtn := SendOnHoldOM()
+                State.KeyInPtn := clearQueue()
+            }
         }
         State.Timeout := 60000
         State.SendTick := INFINITE
@@ -1472,6 +1515,7 @@ RegLogs(_keyEvent, _KeyInPtn, _trigger, _Timeout, _send) {
     
     _tickCount := Pf_Count()
     _timeSinceLastLog := _tickCount - tickLast
+    tickLast := _tickCount
     _tickCount := Mod(_tickCount, 100000)
     
     _tmp := Format("{: 6}|", _tickCount)
@@ -1485,19 +1529,18 @@ RegLogs(_keyEvent, _KeyInPtn, _trigger, _Timeout, _send) {
     
     _MojiPos := "   "
     if (g_OnHoldIdx == 1) {
-        if (g_MetaOnHold.Has(1) && g_MetaOnHold[1] == "M") {
-            _MojiPos := g_MojiOnHold[1]
+        if (SafeMetaOnHold(1) == "M") {
+            _MojiPos := SafeMojiOnHold(1)
         }
     } else if (g_OnHoldIdx >= 2) {
-        if (g_MetaOnHold.Has(1) && g_MetaOnHold[1] == "M") {
-            _MojiPos := g_MojiOnHold[1]
-        } else if (g_MetaOnHold.Has(2) && g_MetaOnHold[2] == "M") {
-            _MojiPos := g_MojiOnHold[2]
+        if (SafeMetaOnHold(1) == "M") {
+            _MojiPos := SafeMojiOnHold(1)
+        } else if (SafeMetaOnHold(2) == "M") {
+            _MojiPos := SafeMojiOnHold(2)
         }
     }
-    
-    global vOverlap := ""
     _tmp .= Format("{: 3}|", vOverlap)
+    vOverlap := ""
     _sendTick := Mod(State.SendTick, 100000)
     _tmp .= Format("{: 6}|", _sendTick)
     _tmp .= _send
@@ -1509,5 +1552,4 @@ RegLogs(_keyEvent, _KeyInPtn, _trigger, _Timeout, _send) {
     if (aLogCnt < 64) {
         aLogCnt += 1
     }
-    tickLast := _tickCount
 }

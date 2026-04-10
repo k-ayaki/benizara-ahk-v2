@@ -29,7 +29,13 @@ InitKeyQueue()
 	
 	; 0番目のインデックスも安全のため空文字で初期化しておきます
 	g_MetaOnHold[0] := ""
-
+    g_TDownOnHold[0] := 0    
+    g_TUpOnHold[0] := 0      
+    g_OyaOnHold[0] := ""     
+    g_MojiOnHold[0] := ""    
+    g_RomajiOnHold[0] := ""  
+    g_KoyubiOnHold[0] := ""
+    
 	Loop 5
 	{
 		g_RomajiOnHold[A_Index] := ""
@@ -332,4 +338,42 @@ countMoji()
 		}
 	}
 	return _cntM
+}
+;----------------------------------------------------------------------
+; 安全なキューアクセス関数群
+; インデックスが範囲外の場合はデフォルト値を返す
+;----------------------------------------------------------------------
+SafeTDownOnHold(idx) {
+    global g_TDownOnHold
+    return (idx >= 1 && g_TDownOnHold.Has(idx)) ? g_TDownOnHold[idx] : 0
+}
+
+SafeTUpOnHold(idx) {
+    global g_TUpOnHold
+    return (idx >= 1 && g_TUpOnHold.Has(idx)) ? g_TUpOnHold[idx] : 0
+}
+
+SafeOyaOnHold(idx) {
+    global g_OyaOnHold
+    return (idx >= 1 && g_OyaOnHold.Has(idx)) ? g_OyaOnHold[idx] : ""
+}
+
+SafeMetaOnHold(idx) {
+    global g_MetaOnHold
+    return (idx >= 1 && g_MetaOnHold.Has(idx)) ? g_MetaOnHold[idx] : ""
+}
+
+SafeMojiOnHold(idx) {
+    global g_MojiOnHold
+    return (idx >= 1 && g_MojiOnHold.Has(idx)) ? g_MojiOnHold[idx] : ""
+}
+
+SafeRomajiOnHold(idx) {
+    global g_RomajiOnHold
+    return (idx >= 1 && g_RomajiOnHold.Has(idx)) ? g_RomajiOnHold[idx] : ""
+}
+
+SafeKoyubiOnHold(idx) {
+    global g_KoyubiOnHold
+    return (idx >= 1 && g_KoyubiOnHold.Has(idx)) ? g_KoyubiOnHold[idx] : ""
 }
